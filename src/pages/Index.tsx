@@ -12,6 +12,13 @@ import { useChristmasAudio } from '@/hooks/useChristmasAudio';
 import { TreeState, GestureType } from '@/types/christmas';
 import { Github } from 'lucide-react';
 
+//CXX自定义 默认数组 照片
+const DEFAULT_PHOTOS: string[] = Array.from({ length: 12 }, (_, i) => {
+  const n = String(i + 1).padStart(2, "0");
+  return `${import.meta.env.BASE_URL}my-photos/${n}.jpg`;
+});
+
+
 // Lazy load heavy 3D scene
 const ChristmasScene = lazy(() => import('@/components/christmas/Scene').then(m => ({ default: m.ChristmasScene })));
 
@@ -19,19 +26,20 @@ const Index = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [treeState, setTreeState] = useState<TreeState>('tree');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [userPhotos, setUserPhotos] = useState<string[]>([]);
+  const photosForScene = userPhotos.length > 0 ? userPhotos : DEFAULT_PHOTOS;
   const [focusedPhotoIndex, setFocusedPhotoIndex] = useState<number | null>(null);
   const [orbitRotation, setOrbitRotation] = useState({ x: 0, y: 0 });
   const [cameraPermission, setCameraPermission] = useState<'prompt' | 'granted' | 'denied' | 'requesting'>('prompt');
   const [showInstructions, setShowInstructions] = useState(true);
-  const [customText, setCustomText] = useState('Merry Christmas');
+  const [customText, setCustomText] = useState('张明雪的圣诞树');
   const [isStarFocused, setIsStarFocused] = useState(false);
   
   // Use refs for values accessed in callbacks to prevent re-renders
   const treeStateRef = useRef(treeState);
-  const photosRef = useRef(photos);
+  const photosRef = useRef(photosForScene);
   treeStateRef.current = treeState;
-  photosRef.current = photos;
+  photosRef.current = photosForScene;
 
   // Simulate loading progress - slower interval
   useEffect(() => {
@@ -53,7 +61,8 @@ const Index = () => {
   }, []);
 
   // Audio hook
-  const audio = useChristmasAudio();
+  const audio = useChristmasAudio({ autoPlay: true, fadeInMs: 1500, fadeOutMs: 900 });
+
 
   // Gesture handling - use refs to avoid callback recreation
   const handleGestureChange = useCallback((gesture: GestureType) => {
@@ -150,7 +159,7 @@ const Index = () => {
       <Suspense fallback={null}>
         <ChristmasScene
           state={treeState}
-          photos={photos}
+          photos={photosForScene}
           focusedPhotoIndex={focusedPhotoIndex}
           orbitRotation={orbitRotation}
           handPosition={handGesture.isTracking ? handGesture.handPosition : null}
@@ -177,10 +186,19 @@ const Index = () => {
             onToggle={audio.toggle}
             onMuteToggle={audio.toggleMute}
           />
+          {audio.needsInteraction && (
+  <button
+    onClick={audio.play}
+    className="fixed left-4 bottom-4 z-50 glass rounded-full px-4 py-2 text-sm"
+  >
+    点击开启音乐 🎵
+  </button>
+)}
+
 
           <PhotoUpload
-            photos={photos}
-            onPhotosChange={setPhotos}
+            photos={userPhotos}
+            onPhotosChange={setUserPhotos}
           />
 
           {/* Camera Debug Preview */}
@@ -195,7 +213,7 @@ const Index = () => {
           <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
          
             <a
-              href="https://github.com/zebo101/christmas-tree"
+              href="https://github.com/cxxpub/lovemx"
               target="_blank"
               rel="noopener noreferrer"
               className="glass rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors"
